@@ -6,7 +6,6 @@ import {
     createRouter,
     createEndpoint,
 } from "colyseus";
-import cors from "cors"; // 🚨 [추가] 모든 접속을 허용하기 위해 cors 모듈 임포트
 
 /**
  * Import your Room files
@@ -22,11 +21,7 @@ const server = defineServer({
     },
 
     /**
-     * Experimental: Define API routes. Built-in integration with the "playground" and SDK.
-     * 
-     * Usage from SDK: 
-     *   client.http.get("/api/hello").then((response) => {})
-     * 
+     * Experimental: Define API routes.
      */
     routes: createRouter({
         api_hello: createEndpoint("/api/hello", { method: "GET", }, async (ctx) => {
@@ -36,18 +31,21 @@ const server = defineServer({
 
     /**
      * Bind your custom express routes here:
-     * Read more: https://expressjs.com/en/starter/basic-routing.html
      */
     express: (app) => {
-        // 🚨 [핵심 수정] file:// 주소를 포함해 어디서든 들어오는 요청을 전부 통과시킵니다!
-        app.use(cors({
-            origin: function (origin, callback) {
-                // 로컬 파일(file://)로 접속 시 origin이 null이나 undefined로 들어옵니다.
-                // 보안을 프리패스하고 무조건 접속을 허용(true)하도록 설정합니다.
-                callback(null, true);
-            },
-            credentials: true
-        }));
+        // 🚨 [패키지 설치 없는 CORS 차단 해제 치트키]
+        // 별도의 cors 라이브러리 없이 미들웨어로 모든 오리진(file:// 포함)을 다 허용해 버립니다.
+        app.use((req, res, next) => {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT");
+            res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+            
+            // 프리플라이트(OPTIONS) 요청 시 200번으로 빠르게 응답하고 패스시킵니다.
+            if (req.method === 'OPTIONS') {
+                return res.sendStatus(200);
+            }
+            next();
+        });
 
         app.get("/hi", (req, res) => {
             res.send("It's time to kick ass and chew bubblegum!");
@@ -55,14 +53,11 @@ const server = defineServer({
 
         /**
          * Use @colyseus/monitor
-         * It is recommended to protect this route with a password
-         * Read more: https://docs.colyseus.io/tools/monitoring/#restrict-access-to-the-panel-using-a-password
          */
         app.use("/monitor", monitor());
 
         /**
          * Use @colyseus/playground
-         * (It is not recommended to expose this route in a production environment)
          */
         if (process.env.NODE_ENV !== "production") {
             app.use("/", playground());
