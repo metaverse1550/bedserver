@@ -51,11 +51,20 @@ export class MyRoom extends Room {
     this.onMessage("rematch_agree", (client, data) => {
       this.broadcast("rematch_agree_sync", data, { except: client });
     });
+
+    // 🆕 7. 이모트(티배깅) 중계
+    this.onMessage("player_emote", (client, data) => {
+      this.broadcast("player_emote_sync", data, { except: client });
+    });
+
+    // 🆕 8. 감정 표현(말풍선) 중계
+    this.onMessage("player_emotion", (client, data) => {
+      this.broadcast("player_emotion_sync", data, { except: client });
+    });
   }
 
   onJoin(client, options) {
     console.log(`👤 입장: ${client.sessionId}`);
-
     // 먼저 들어오면 Host(P1), 두 번째는 Guest(P2)
     if (!this.hostClient) {
       this.hostClient = client;
@@ -63,7 +72,7 @@ export class MyRoom extends Room {
     } else if (!this.guestClient) {
       this.guestClient = client;
       client.send("assign_role", { role: "guest" });
-      
+
       // 둘 다 모였으니 게임 시작 신호 발송!
       this.broadcast("start_match_trigger", {});
     }
