@@ -6,6 +6,7 @@ import {
     createRouter,
     createEndpoint,
 } from "colyseus";
+import cors from "cors"; // 🚨 [추가] 모든 접속을 허용하기 위해 cors 모듈 임포트
 
 /**
  * Import your Room files
@@ -38,6 +39,16 @@ const server = defineServer({
      * Read more: https://expressjs.com/en/starter/basic-routing.html
      */
     express: (app) => {
+        // 🚨 [핵심 수정] file:// 주소를 포함해 어디서든 들어오는 요청을 전부 통과시킵니다!
+        app.use(cors({
+            origin: function (origin, callback) {
+                // 로컬 파일(file://)로 접속 시 origin이 null이나 undefined로 들어옵니다.
+                // 보안을 프리패스하고 무조건 접속을 허용(true)하도록 설정합니다.
+                callback(null, true);
+            },
+            credentials: true
+        }));
+
         app.get("/hi", (req, res) => {
             res.send("It's time to kick ass and chew bubblegum!");
         });
