@@ -13,6 +13,15 @@ import {
 import { MyRoom } from "./rooms/MyRoom.js";
 
 const server = defineServer({
+    // 🚨 [여기가 진짜 핵심!] Colyseus 자체 서버 엔진에 CORS 통과 옵션을 명시합니다.
+    options: {
+        // file:// 환경의 'null' 출처를 포함해 모든 접속 요청의 헤더를 수락합니다.
+        cors: {
+            origin: (origin, callback) => callback(null, true),
+            credentials: true
+        }
+    },
+
     /**
      * Define your room handlers:
      */
@@ -33,14 +42,11 @@ const server = defineServer({
      * Bind your custom express routes here:
      */
     express: (app) => {
-        // 🚨 [패키지 설치 없는 CORS 차단 해제 치트키]
-        // 별도의 cors 라이브러리 없이 미들웨어로 모든 오리진(file:// 포함)을 다 허용해 버립니다.
+        // 일반 HTTP 요청도 혹시 모르니 한 번 더 빗장을 풀어둡니다.
         app.use((req, res, next) => {
             res.setHeader("Access-Control-Allow-Origin", "*");
             res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT");
             res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
-            
-            // 프리플라이트(OPTIONS) 요청 시 200번으로 빠르게 응답하고 패스시킵니다.
             if (req.method === 'OPTIONS') {
                 return res.sendStatus(200);
             }
